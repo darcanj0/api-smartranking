@@ -1,17 +1,29 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
 import { CreatePlayerDto } from './dtos/create-player.dto';
+import { Player } from './interfaces/player.interface';
+import { PlayersService } from './players.service';
 
 @Controller('api/v1/players')
 export class PlayersController {
+  constructor(private readonly playersService: PlayersService) {}
   @Post()
   async createUpdatePlayer(@Body() createPlayerDto: CreatePlayerDto) {
-    const { email, name, phoneNumber } = createPlayerDto;
-    return JSON.stringify(`
-    {
-      "name": ${name},
-      "phoneNumber": ${phoneNumber},
-      "email": ${email},
+    this.playersService.createUpdatePlayer(createPlayerDto);
+  }
+
+  @Get()
+  async findAllPlayers(
+    @Query('email') email: string,
+  ): Promise<Player[] | Player> {
+    if (email) {
+      return this.playersService.findPlayerByEmail(email);
+    } else {
+      return this.playersService.findAllPlayers();
     }
-    `);
+  }
+
+  @Delete()
+  async deletePlayer(@Query('email') email: string): Promise<void> {
+    return this.playersService.deletePlayer(email);
   }
 }
