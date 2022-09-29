@@ -12,7 +12,6 @@ import {
 import { CreatePlayerDto } from './dtos/create-player.dto';
 import { UpdatePlayerDto } from './dtos/update-user.dto';
 import { Player } from './interfaces/player.interface';
-import { PlayersValidationParamsPipe } from './pipes/players-validation-params.pipe';
 import { PlayersService } from './players.service';
 
 @Controller('api/v1/players')
