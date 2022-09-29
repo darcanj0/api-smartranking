@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { PlayersService } from 'src/players/players.service';
 import { CreateCategoryDto } from './dtos/create-category.dto';
 import { UpdateCategoryDto } from './dtos/update-category-dto';
 import { Category } from './interfaces/category.interface';
@@ -14,9 +15,18 @@ import { Category } from './interfaces/category.interface';
 export class CategoriesService {
   constructor(
     @InjectModel('category') private readonly categoryModel: Model<Category>,
+    private readonly playersService: PlayersService,
   ) {}
 
-  private async checkIfCategoryExistsByName(
+  private async checkIfCategoryNameExists(category: string): Promise<Category> {
+    const categoryFound = await this.categoryModel.findOne({ category }).exec();
+    if (!categoryFound) {
+      throw new NotFoundException(`Category name ${category} was not found`);
+    }
+    return categoryFound;
+  }
+
+  private async checkIfCategoryNameIsavaliable(
     category: string,
   ): Promise<void | HttpException> {
     const categoryFound = await this.categoryModel.findOne({ category }).exec();
@@ -37,7 +47,7 @@ export class CategoriesService {
 
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
     const { category } = createCategoryDto;
-    await this.checkIfCategoryExistsByName(category);
+    await this.checkIfCategoryNameIsavaliable(category);
     const createdCategory = new this.categoryModel(createCategoryDto);
     return createdCategory.save();
   }
@@ -57,6 +67,26 @@ export class CategoriesService {
     await this.checkIfCategoryExistsById(id);
     await this.categoryModel
       .findOneAndUpdate({ id }, { $set: updateCategoryDto })
+      .exec();
+  }
+
+  async setPlayerToCategory(params: string[]): Promise<void> {
+    const category = params['category'];
+    const playerId = params['playerId'];
+    const categoryFound = await this.checkIfCategoryNameExists(category);
+    await this.playersService.findPlayerById(playerId);
+    const playerAlreadyInCategory = await this.categoryModel
+      .find({ category })
+      .where('players')
+      .in(playerId)
+      .exec();
+    if (playerAlreadyInCategory.some((id) => id === playerId))
+      throw new BadRequestException(
+        `Player ${playerId} already in category ${category}`,
+      );
+    categoryFound.players.push(playerId);
+    await this.categoryModel
+      .findOneAndUpdate({ category }, { $set: categoryFound })
       .exec();
   }
 }
