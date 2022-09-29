@@ -1,4 +1,9 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreatePlayerDto } from './dtos/create-player.dto';
@@ -12,9 +17,9 @@ export class PlayersService {
   ) {}
 
   private async checkIfPlayerExistsById(id: string): Promise<Player> {
-    const playerFound = await this.playerModel.findOne({ id: id }).exec();
+    const playerFound = await this.playerModel.findOne({ id }).exec();
     if (!playerFound) {
-      throw new BadRequestException(`Player with id ${id} does not exist`);
+      throw new NotFoundException(`Player with id ${id} does not exist`);
     }
     return playerFound;
   }
